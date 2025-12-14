@@ -1,0 +1,214 @@
+# GenEnv Configuration File
+# Adapted from verl (https://github.com/volcengine/verl)
+#
+# This configuration file contains all parameters for GenEnv training.
+# Users should customize the following sections:
+# 1. data: paths to your training/validation datasets
+# 2. actor_rollout_ref.model.path: path to your base model
+# 3. env_model_path: path to the Environment LLM
+# 4. genenv: co-training specific parameters
+
+# ============================================================================
+# GenEnv Co-Training Configuration
+# ============================================================================
+genenv:
+  enable: True                        # Enable co-training mode
+  filtering_k: 0.1                    # Fraction of easiest/hardest prompts to filter
+  num_generations_per_prompt: 4       # Number of agent generations per prompt for evaluation
+  alpha: 0.5                          # Target pass rate for Env reward
+  beta: 2.0                           # Sharpness of Env reward curve
+
+# Environment LLM path (for task generation)
+# >>> USER CUSTOMIZATION: Set your Environment LLM path <<<
+env_model_path: /path/to/your/env/model
+
+# ============================================================================
+# Data Configuration
+# ============================================================================
+data:
+  tokenizer: null
+  # >>> USER CUSTOMIZATION: Set your dataset paths <<<
+  train_files: /path/to/your/train.parquet
+  val_files: /path/to/your/validation.parquet
+  prompt_key: prompt                  # Column name for prompts in parquet
+  max_prompt_length: 4096
+  max_response_length: 512
+  train_batch_size: 64
+  val_batch_size: 500
+  return_raw_input_ids: False
+  return_raw_chat: False
+
+# ============================================================================
+# Actor-Rollout-Reference Model Configuration
+# ============================================================================
+actor_rollout_ref:
+  hybrid_engine: True
+  model:
+    # >>> USER CUSTOMIZATION: Set your model path <<<
+    path: /path/to/your/base/model
+    external_lib: null
+    override_config: { }
+    enable_gradient_checkpointing: True
+    use_remove_padding: True
+  
+  actor:
+    strategy: fsdp
+    ppo_mini_batch_size: 16
+    ppo_micro_batch_size: 8
+    use_dynamic_bsz: True
+    ppo_max_token_len_per_gpu: 32768
+    grad_clip: 1.0
+    clip_ratio: 0.2
+    clip_ratio_low: -1
+    clip_ratio_high: -1
+    use_token_level_loss: True
+    entropy_coeff: 0.001
+    use_kl_loss: True                 # Use KL loss for GRPO
+    kl_loss_coef: 0.001
+    kl_loss_type: low_var_kl
+    ppo_epochs: 1
+    shuffle: False
+    ulysses_sequence_parallel_size: 1
+    optim:
+      lr: 1e-6
+      lr_warmup_steps_ratio: 0.
+      min_lr_ratio: null
+      warmup_style: constant
+      total_training_steps: -1
+    fsdp_config:
+      wrap_policy:
+        min_num_params: 0
+      param_offload: False
+      grad_offload: False
+      optimizer_offload: True
+      fsdp_size: -1
+  
+  ref:
+    fsdp_config:
+      param_offload: False
+      wrap_policy:
+        min_num_params: 0
+    log_prob_micro_batch_size: 128
+    log_prob_use_dynamic_bsz: ${actor_rollout_ref.actor.use_dynamic_bsz}
+    log_prob_max_token_len_per_gpu: ${actor_rollout_ref.actor.ppo_max_token_len_per_gpu}
+    ulysses_sequence_parallel_size: ${actor_rollout_ref.actor.ulysses_sequence_parallel_size}
+  
+  rollout:
+    name: vllm
+    temperature: 1.0
+    val_temperature: 0.0
+    compute_reward: False
+    top_k: -1
+    top_p: 1
+    prompt_length: ${data.max_prompt_length}
+    response_length: ${data.max_response_length}
+    dtype: bfloat16
+    gpu_memory_utilization: 0.75
+    ignore_eos: False
+    enforce_eager: True
+    free_cache_engine: True
+    load_format: dummy_dtensor
+    tensor_model_parallel_size: 1
+    max_num_batched_tokens: 32000
+    max_num_seqs: 1024
+    log_prob_micro_batch_size: 128
+    log_prob_use_dynamic_bsz: ${actor_rollout_ref.actor.use_dynamic_bsz}
+    log_prob_max_token_len_per_gpu: ${actor_rollout_ref.actor.ppo_max_token_len_per_gpu}
+    enable_chunked_prefill: True
+    do_sample: True
+    n: 8                              # Number of generations per prompt for GRPO
+    n_val: 1                          # Number of generations for validation
+
+# ============================================================================
+# Critic Configuration (Not used in GRPO, but required by verl)
+# ============================================================================
+critic:
+  strategy: fsdp
+  optim:
+    lr: 1e-5
+    lr_warmup_steps_ratio: 0.
+    min_lr_ratio: null
+    warmup_style: constant
+    total_training_steps: -1
+  model:
+    path: ${actor_rollout_ref.model.path}
+    tokenizer_path: ${actor_rollout_ref.model.path}
+    override_config: { }
+    external_lib: ${actor_rollout_ref.model.external_lib}
+    enable_gradient_checkpointing: True
+    use_remove_padding: False
+    fsdp_config:
+      param_offload: False
+      grad_offload: False
+      optimizer_offload: False
+      wrap_policy:
+        min_num_params: 0
+      fsdp_size: -1
+  ppo_mini_batch_size: ${actor_rollout_ref.actor.ppo_mini_batch_size}
+  ppo_micro_batch_size: 64
+  forward_micro_batch_size: ${critic.ppo_micro_batch_size}
+  use_dynamic_bsz: ${actor_rollout_ref.actor.use_dynamic_bsz}
+  ppo_max_token_len_per_gpu: 32768
+  forward_max_token_len_per_gpu: ${critic.ppo_max_token_len_per_gpu}
+  ulysses_sequence_parallel_size: 1
+  ppo_epochs: ${actor_rollout_ref.actor.ppo_epochs}
+  shuffle: ${actor_rollout_ref.actor.shuffle}
+  grad_clip: 1.0
+  cliprange_value: 0.2
+
+# ============================================================================
+# Reward Model Configuration (Disabled - using function-based rewards)
+# ============================================================================
+reward_model:
+  enable: False
+  strategy: fsdp
+  model:
+    input_tokenizer: ${actor_rollout_ref.model.path}
+    path: null
+    external_lib: ${actor_rollout_ref.model.external_lib}
+    use_remove_padding: False
+    fsdp_config:
+      min_num_params: 0
+      param_offload: False
+      fsdp_size: -1
+  micro_batch_size: 64
+  max_length: null
+  ulysses_sequence_parallel_size: 1
+  use_dynamic_bsz: ${critic.use_dynamic_bsz}
+  forward_max_token_len_per_gpu: ${critic.forward_max_token_len_per_gpu}
+
+# ============================================================================
+# Algorithm Configuration
+# ============================================================================
+algorithm:
+  gamma: 1.0
+  lam: 1.0
+  adv_estimator: grpo                 # Use GRPO for advantage estimation
+  mask_truncated_samples: False
+  kl_penalty: kl
+  kl_ctrl:
+    type: fixed
+    kl_coef: 0.001
+
+# ============================================================================
+# Trainer Configuration
+# ============================================================================
+trainer:
+  rejection_sample: False
+  rejection_sample_multiplier: 2
+  total_epochs: 20
+  total_training_steps: null
+  project_name: genenv
+  experiment_name: genenv_experiment
+  logger: ['console']                 # Add 'wandb' for Weights & Biases logging
+  nnodes: 1
+  n_gpus_per_node: 8
+  save_freq: 100
+  test_freq: 10
+  critic_warmup: 0
+  ray_address: auto
+  default_hdfs_dir: null
+  # >>> USER CUSTOMIZATION: Set your checkpoint directory <<<
+  default_local_dir: /path/to/save/checkpoints
+  val_before_train: True
+

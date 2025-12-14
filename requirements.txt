@@ -1,0 +1,24 @@
+# GenEnv Requirements
+# Note: veRL must be installed separately following its installation guide
+# https://github.com/volcengine/verl
+
+# Core dependencies
+torch>=2.0.0
+transformers>=4.36.0
+vllm>=0.4.0
+ray>=2.9.0
+hydra-core>=1.3.0
+omegaconf>=2.3.0
+
+# Data processing
+pandas>=2.0.0
+numpy>=1.24.0
+pyarrow>=14.0.0
+
+# Utilities
+tqdm>=4.65.0
+codetiming>=1.4.0
+
+# Optional: Logging
+# wandb>=0.16.0
+
