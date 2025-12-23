@@ -1,10 +1,4 @@
-<p align="center">
-  <img src="assets/logo.png" width="400"/>
-</p>
-
-<h1 align="center">GenEnv</h1>
-
-<h3 align="center">Generative Environment Co-Training for LLM Agents</h3>
+<h1 align="center">GenEnv: Difficulty-Aligned Co-Evolution Between LLM Agents and Environment Simulators</h1>
 
 <p align="center">
   <a href="https://arxiv.org/abs/xxxx.xxxxx"><img src="https://img.shields.io/badge/arXiv-Paper-red?style=flat-square&logo=arxiv" alt="Paper"></a>
