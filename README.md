@@ -1,7 +1,7 @@
 <h1 align="center">GenEnv: Difficulty-Aligned Co-Evolution Between LLM Agents and Environment Simulators</h1>
 
 <p align="center">
-  <a href="https://arxiv.org/abs/xxxx.xxxxx"><img src="https://img.shields.io/badge/arXiv-Paper-red?style=flat-square&logo=arxiv" alt="Paper"></a>
+  <a href="https://arxiv.org/abs/2512.19682"><img src="https://img.shields.io/badge/arXiv-Paper-red?style=flat-square&logo=arxiv" alt="Paper"></a>
   <a href="https://github.com/Gen-Verse/GenEnv"><img src="https://img.shields.io/badge/GitHub-Code-blue?style=flat-square&logo=github" alt="Code"></a>
   <a href="https://github.com/volcengine/verl"><img src="https://img.shields.io/badge/Built%20on-veRL-orange?style=flat-square" alt="veRL"></a>
   <a href="https://opensource.org/licenses/Apache-2.0"><img src="https://img.shields.io/badge/License-Apache%202.0-green.svg?style=flat-square" alt="License"></a>
@@ -202,11 +202,14 @@ This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENS
 If you find GenEnv useful for your research, please consider citing:
 
 ```bibtex
-@article{genenv2025,
-  title={GenEnv: Generative Environment Co-Training for LLM Agents},
-  author={},
-  journal={arXiv preprint arXiv:xxxx.xxxxx},
-  year={2025}
+@misc{guo2025genenvdifficultyalignedcoevolutionllm,
+      title={GenEnv: Difficulty-Aligned Co-Evolution Between LLM Agents and Environment Simulators}, 
+      author={Jiacheng Guo and Ling Yang and Peter Chen and Qixin Xiao and Yinjie Wang and Xinzhe Juan and Jiahao Qiu and Ke Shen and Mengdi Wang},
+      year={2025},
+      eprint={2512.19682},
+      archivePrefix={arXiv},
+      primaryClass={cs.CL},
+      url={https://arxiv.org/abs/2512.19682}, 
 }
 ```
 
